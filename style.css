@@ -626,3 +626,57 @@ input:checked + .slider:before {
     padding: 12px 10px !important;
     margin: 0 -10px;
 }
+
+/* Feedback UI */
+#feedback-list-container {
+    width: 100%;
+    height: 250px;
+    overflow-y: auto;
+    margin-bottom: 10px;
+    background: rgba(0, 0, 0, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+    padding: 10px;
+}
+
+#feedback-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.feedback-item {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 8px;
+    padding: 10px;
+    text-align: left;
+    border-left: 3px solid #00eeff;
+}
+
+.feedback-header {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 5px;
+    font-size: 12px;
+    color: #ccc;
+}
+
+.feedback-author {
+    font-weight: bold;
+    color: #00eeff;
+}
+
+.feedback-text {
+    font-size: 14px;
+    line-height: 1.4;
+    word-break: break-word;
+}
+
+#feedback-input {
+    resize: none;
+    height: 80px;
+    margin-top: 0;
+}

@@ -73,6 +73,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const btnPlay = document.getElementById('btn-play');
     const btnLeaderboard = document.getElementById('btn-leaderboard');
     const btnTutorial = document.getElementById('btn-tutorial');
+    const btnFeedback = document.getElementById('btn-feedback');
     const btnSettings = document.getElementById('btn-settings');
     const btnGoogleLogin = document.getElementById('btn-google-login');
     const btnEmailLogin = document.getElementById('btn-email-login');
@@ -108,6 +109,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const settingsModal = document.getElementById('settings-modal');
     const leaderboardModal = document.getElementById('leaderboard-modal');
     const tutorialModal = document.getElementById('tutorial-modal');
+    const feedbackModal = document.getElementById('feedback-modal');
+    const feedbackList = document.getElementById('feedback-list');
+    const feedbackInput = document.getElementById('feedback-input');
+    const btnSubmitFeedback = document.getElementById('btn-submit-feedback');
     const closeBtns = document.querySelectorAll('.close-modal');
     
     const finalScoreDisplay = document.getElementById('final-score-value');
@@ -768,47 +773,53 @@ document.addEventListener('DOMContentLoaded', () => {
         // Local leaderboard array is deprecated in favor of Global Leaderboard
     }
 
-    async function updateLeaderboardUI() {
-        const loadingStr = '<li style="justify-content:center; color:#00eeff; font-size:16px; border:none;">Loading scores...</li>';
-        leaderboardList.innerHTML = loadingStr;
-        
-        try {
-            const snapshot = await db.collection('users')
-                .orderBy('bestScore', 'desc')
-                .limit(10)
-                .get();
-                
-            leaderboardList.innerHTML = '';
+    let leaderboardUnsubscribe = null;
+
+    function updateLeaderboardUI() {
+        if (!leaderboardUnsubscribe) {
+            const loadingStr = '<li style="justify-content:center; color:#00eeff; font-size:16px; border:none;">Loading scores...</li>';
+            leaderboardList.innerHTML = loadingStr;
             
-            if (snapshot.empty) {
-                leaderboardList.innerHTML = '<li style="justify-content:center;">No scores yet!</li>';
-                return;
+            try {
+                leaderboardUnsubscribe = db.collection('users')
+                    .orderBy('bestScore', 'desc')
+                    .limit(10)
+                    .onSnapshot(snapshot => {
+                        leaderboardList.innerHTML = '';
+                        
+                        if (snapshot.empty) {
+                            leaderboardList.innerHTML = '<li style="justify-content:center;">No scores yet!</li>';
+                            return;
+                        }
+                        
+                        let rank = 1;
+                        snapshot.forEach(doc => {
+                            const data = doc.data();
+                            const score = data.bestScore || 0;
+                            const name = data.nickname || 'Unknown Player';
+                            
+                            const li = document.createElement('li');
+                            if (currentUser && doc.id === currentUser.uid) {
+                                li.classList.add('highlight-row');
+                            }
+                            
+                            li.innerHTML = `
+                                <span style="display:flex; align-items:center; gap:10px;">
+                                    <span style="color:#aaa; width:30px;">#${rank}</span> 
+                                    <span style="font-weight:bold; max-width:140px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${name}</span>
+                                </span> 
+                                <span style="color:#00eeff; font-weight:900;">${score}</span>
+                            `;
+                            leaderboardList.appendChild(li);
+                            rank++;
+                        });
+                    }, e => {
+                        console.error("Error fetching leaderboard", e);
+                        leaderboardList.innerHTML = '<li style="justify-content:center; color:#ff003c; border:none;">Error loading scores.</li>';
+                    });
+            } catch(e) {
+                console.error("Error setting up leaderboard listener", e);
             }
-            
-            let rank = 1;
-            snapshot.forEach(doc => {
-                const data = doc.data();
-                const score = data.bestScore || 0;
-                const name = data.nickname || 'Unknown Player';
-                
-                const li = document.createElement('li');
-                if (currentUser && doc.id === currentUser.uid) {
-                    li.classList.add('highlight-row');
-                }
-                
-                li.innerHTML = `
-                    <span style="display:flex; align-items:center; gap:10px;">
-                        <span style="color:#aaa; width:30px;">#${rank}</span> 
-                        <span style="font-weight:bold; max-width:140px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${name}</span>
-                    </span> 
-                    <span style="color:#00eeff; font-weight:900;">${score}</span>
-                `;
-                leaderboardList.appendChild(li);
-                rank++;
-            });
-        } catch(e) {
-            console.error("Error fetching leaderboard", e);
-            leaderboardList.innerHTML = '<li style="justify-content:center; color:#ff003c; border:none;">Error loading scores.</li>';
         }
     }
 
@@ -846,6 +857,73 @@ document.addEventListener('DOMContentLoaded', () => {
         updateLeaderboardUI();
         leaderboardModal.classList.remove('hidden');
     });
+
+    let feedbackUnsubscribe = null;
+    btnFeedback.addEventListener('click', () => {
+        feedbackModal.classList.remove('hidden');
+        if (!feedbackUnsubscribe) {
+            feedbackList.innerHTML = '<li style="text-align:center; color:#aaa;">Loading messages...</li>';
+            feedbackUnsubscribe = db.collection('messages')
+                .orderBy('timestamp', 'desc')
+                .limit(30)
+                .onSnapshot(snapshot => {
+                    feedbackList.innerHTML = '';
+                    if (snapshot.empty) {
+                        feedbackList.innerHTML = '<li style="text-align:center; color:#aaa;">No messages yet. Be the first!</li>';
+                        return;
+                    }
+                    snapshot.forEach(doc => {
+                        const data = doc.data();
+                        const li = document.createElement('li');
+                        li.className = 'feedback-item';
+                        
+                        let dateStr = '';
+                        if (data.timestamp) {
+                            const d = data.timestamp.toDate();
+                            dateStr = `${d.getMonth()+1}/${d.getDate()} ${d.getHours().toString().padStart(2, '0')}:${d.getMinutes().toString().padStart(2, '0')}`;
+                        }
+                        
+                        li.innerHTML = `
+                            <div class="feedback-header">
+                                <span class="feedback-author"></span>
+                                <span>${dateStr}</span>
+                            </div>
+                            <div class="feedback-text"></div>
+                        `;
+                        li.querySelector('.feedback-author').textContent = data.nickname || 'Unknown';
+                        li.querySelector('.feedback-text').textContent = data.text;
+                        feedbackList.appendChild(li);
+                    });
+                }, error => {
+                    console.error("Error loading messages", error);
+                    feedbackList.innerHTML = '<li style="text-align:center; color:#ff003c;">Error loading messages.</li>';
+                });
+        }
+    });
+
+    btnSubmitFeedback.addEventListener('click', () => {
+        if (!currentUser) {
+            alert("⚠️ 請先登入 (使用 Google 或 Email) 才能留言！");
+            return;
+        }
+        const text = feedbackInput.value.trim();
+        if (!text) return;
+
+        const nickname = currentUser.nickname || userName.textContent;
+
+        db.collection('messages').add({
+            nickname: nickname,
+            text: text,
+            uid: currentUser.uid,
+            timestamp: firebase.firestore.FieldValue.serverTimestamp()
+        }).then(() => {
+            feedbackInput.value = '';
+        }).catch(error => {
+            console.error("Error adding message", error);
+            alert("Failed to send message: " + error.message);
+        });
+    });
+
     btnTutorial.addEventListener('click', () => tutorialModal.classList.remove('hidden'));
 
     closeBtns.forEach(btn => {

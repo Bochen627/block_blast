@@ -38,6 +38,7 @@
 
             <div class="small-buttons">
                 <button id="btn-tutorial" class="icon-btn" title="How to Play">❓</button>
+                <button id="btn-feedback" class="icon-btn" title="Message Board">💬</button>
                 <button id="btn-settings" class="icon-btn" title="Settings">⚙️</button>
             </div>
         </div>
@@ -146,6 +147,20 @@
             <button class="close-modal primary-btn" data-target="tutorial-modal" style="margin-top: 20px;">Got it!</button>
         </div>
     </div>
+
+    <!-- Feedback Modal -->
+    <div id="feedback-modal" class="hidden modal-overlay">
+        <div class="modal-content" style="max-width: 400px;">
+            <h2>Message Board</h2>
+            <div id="feedback-list-container">
+                <ul id="feedback-list"></ul>
+            </div>
+            <textarea id="feedback-input" class="auth-input" placeholder="Leave a message..."></textarea>
+            <button id="btn-submit-feedback" class="primary-btn" style="margin-top: 15px;">Send</button>
+            <button class="close-modal danger-btn" data-target="feedback-modal" style="margin-top:10px; width:100%;">Close</button>
+        </div>
+    </div>
+
 
     <!-- Dragging piece overlay -->
     <div id="drag-layer"></div>

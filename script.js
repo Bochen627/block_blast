@@ -907,6 +907,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Firebase Auth Events
     btnGoogleLogin.addEventListener('click', () => {
+        if (window.location.protocol === 'file:') {
+            alert('⚠️ Google 登入無法在直接開啟檔案 (file:///) 的情況下使用。\n\n請使用本地伺服器 (例如 VS Code 的 Live Server 或 python -m http.server) 來執行此網頁 (http://localhost...)。');
+            return;
+        }
         const provider = new firebase.auth.GoogleAuthProvider();
         auth.signInWithPopup(provider).catch(error => {
             console.error("Login failed", error);
